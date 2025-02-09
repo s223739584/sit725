@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delicious Recipes</title>
+    
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <style>
+        /* Custom Styles */
+        .recipe-card {
+            transition: transform 0.3s ease-in-out;
+        }
+        .recipe-card:hover {
+            transform: scale(1.05);
+        }
+        .recipe-card img {
+            height: 200px;
+            object-fit: cover;
+        }
+        .nav-wrapper {
+            padding: 0 20px;
+        }
+        .floating-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="blue darken-3">
+        <div class="nav-wrapper container">
+            <a href="#" class="brand-logo">Delicious Recipes</a>
+            <ul class="right">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">Add Recipe</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Page Container -->
+    <div class="container">
+        <h4 class="center">Delicious Recipes</h4>
+        <div id="recipeList" class="row"></div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="floating-btn">
+        <a class="btn-floating btn-large red modal-trigger" href="#addRecipeModal">
+            <i class="large material-icons">add</i>
+        </a>
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="addRecipeModal" class="modal">
+        <div class="modal-content">
+            <h4>Add New Recipe</h4>
+            <div class="input-field">
+                <input type="text" id="recipeName" required>
+                <label for="recipeName">Recipe Name</label>
+            </div>
+            <div class="input-field">
+                <textarea id="recipeIngredients" class="materialize-textarea" required></textarea>
+                <label for="recipeIngredients">Ingredients (comma-separated)</label>
+            </div>
+            <div class="input-field">
+                <textarea id="recipeInstructions" class="materialize-textarea" required></textarea>
+                <label for="recipeInstructions">Instructions</label>
+            </div>
+            <div class="input-field">
+                <input type="text" id="recipeImage" required>
+                <label for="recipeImage">Image URL</label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-close waves-effect waves-red btn-flat">Cancel</button>
+            <button id="addRecipeBtn" class="waves-effect waves-green btn blue">Add Recipe</button>
+        </div>
+    </div>
+
+    <!-- Socket.io & Fetch Recipes -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // ✅ Listen for random numbers (console only)
+        socket.on('randomNumber', (data) => {
+            console.log(`📌 Received from server: ${data}`);
+        });
+
+        // ✅ Fetch and display recipes
+        async function fetchRecipes() {
+            try {
+                const response = await fetch('/api/recipes');
+                const recipes = await response.json();
+                const recipeList = document.getElementById('recipeList');
+
+                recipeList.innerHTML = recipes.map(recipe => `
+                    <div class="col s12 m6 l4">
+                        <div class="card recipe-card">
+                            <div class="card-image">
+                                <img src="${recipe.image}" alt="${recipe.name}">
+                            </div>
+                            <div class="card-content">
+                                <h5>${recipe.name}</h5>
+                                <p>${recipe.instructions.substring(0, 50)}...</p>
+                                <a href="#" class="orange-text">VIEW RECIPE</a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error("❌ Error fetching recipes:", error);
+            }
+        }
+
+        fetchRecipes();
+
+        // ✅ Add Recipe Functionality
+        document.getElementById("addRecipeBtn").addEventListener("click", async () => {
+            const name = document.getElementById("recipeName").value;
+            const ingredients = document.getElementById("recipeIngredients").value.split(",");
+            const instructions = document.getElementById("recipeInstructions").value;
+            const image = document.getElementById("recipeImage").value;
+
+            const newRecipe = { name, ingredients, instructions, image };
+
+            try {
+                await fetch('/api/recipes', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(newRecipe)
+                });
+
+                M.toast({ html: "Recipe Added!" });
+                fetchRecipes();
+            } catch (error) {
+                console.error("❌ Error adding recipe:", error);
+            }
+        });
+
+        // ✅ Initialize Materialize Modal
+        document.addEventListener("DOMContentLoaded", () => {
+            const elems = document.querySelectorAll(".modal");
+            M.Modal.init(elems);
+        });
+    </script>
+
+    <!-- Materialize JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+</html>
