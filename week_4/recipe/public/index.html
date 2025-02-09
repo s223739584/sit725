@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Recipe Page</title>
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    
+    <!-- Navbar -->
+    <nav class="blue darken-3">
+        <div class="nav-wrapper container">
+            <a href="#" class="brand-logo">Recipe Hub</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <h4 class="center">Delicious Recipes</h4>
+        
+        <!-- Add Recipe Button -->
+        <div class="right-align">
+            <a class="waves-effect waves-light btn modal-trigger" href="#addRecipeModal">Add Recipe</a>
+        </div>
+        
+        <!-- Recipes List -->
+        <div id="recipe-container" class="row"></div>
+    </div>
+    
+    <!-- Recipe Modal -->
+    <div id="recipeModal" class="modal">
+        <div class="modal-content">
+            <h4 id="modal-title"></h4>
+            <ul id="modal-ingredients"></ul>
+            <p id="modal-instructions"></p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="modal-close waves-effect waves-green btn-flat">Close</a>
+        </div>
+    </div>
+    
+    <!-- Add Recipe Modal -->
+    <div id="addRecipeModal" class="modal">
+        <div class="modal-content">
+            <h4>Add New Recipe</h4>
+            <div class="input-field">
+                <input type="text" id="recipe-name" required>
+                <label for="recipe-name">Recipe Name</label>
+            </div>
+            <div class="input-field">
+                <input type="text" id="recipe-image" required>
+                <label for="recipe-image">Image URL</label>
+            </div>
+            <div class="input-field">
+                <textarea id="recipe-ingredients" class="materialize-textarea" required></textarea>
+                <label for="recipe-ingredients">Ingredients (comma separated)</label>
+            </div>
+            <div class="input-field">
+                <textarea id="recipe-instructions" class="materialize-textarea" required></textarea>
+                <label for="recipe-instructions">Instructions</label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="modal-close waves-effect waves-green btn-flat">Cancel</a>
+            <a href="#" class="waves-effect waves-green btn" onclick="addRecipe()">Submit</a>
+        </div>
+    </div>
+    
+    <!-- Materialize JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var modalElems = document.querySelectorAll('.modal');
+            M.Modal.init(modalElems);
+            loadRecipes();
+        });
+
+        function loadRecipes() {
+            fetch('/api/recipes')
+                .then(response => response.json())
+                .then(recipes => {
+                    const recipeContainer = document.getElementById('recipe-container');
+                    recipeContainer.innerHTML = "";
+                    recipes.forEach(recipe => {
+                        const recipeCard = document.createElement('div');
+                        recipeCard.classList.add('col', 's12', 'm6', 'l4');
+                        recipeCard.innerHTML = `
+                            <div class="card">
+                                <div class="card-image">
+                                    <img src="${recipe.image}" alt="${recipe.name}">
+                                    <span class="card-title">${recipe.name}</span>
+                                </div>
+                                <div class="card-content">
+                                    <p>${recipe.instructions.substring(0, 50)}...</p>
+                                </div>
+                                <div class="card-action">
+                                    <a href="#recipeModal" class="modal-trigger" onclick="showRecipe('${recipe._id}')">View Recipe</a>
+                                </div>
+                            </div>`;
+                        recipeContainer.appendChild(recipeCard);
+                    });
+                });
+        }
+
+        function showRecipe(recipeId) {
+            fetch('/api/recipes')
+                .then(response => response.json())
+                .then(recipes => {
+                    const recipe = recipes.find(r => r._id === recipeId);
+                    document.getElementById('modal-title').innerText = recipe.name;
+                    document.getElementById('modal-ingredients').innerHTML = recipe.ingredients.map(ing => `<li>${ing}</li>`).join('');
+                    document.getElementById('modal-instructions').innerText = recipe.instructions;
+                });
+        }
+
+        function addRecipe() {
+            const name = document.getElementById('recipe-name').value;
+            const image = document.getElementById('recipe-image').value;
+            const ingredients = document.getElementById('recipe-ingredients').value.split(',');
+            const instructions = document.getElementById('recipe-instructions').value;
+
+            const newRecipe = { name, image, ingredients, instructions };
+
+            fetch('/api/recipes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newRecipe)
+            })
+            .then(response => response.json())
+            .then(() => {
+                M.Modal.getInstance(document.getElementById('addRecipeModal')).close();
+                loadRecipes();
+            });
+        }
+    </script>
+</body>
+</html>
