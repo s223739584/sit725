@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Recipe Page</title>
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    
+    <!-- Navbar -->
+    <nav class="blue darken-3">
+        <div class="nav-wrapper container">
+            <a href="#" class="brand-logo">Recipe Hub</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <h4 class="center">Delicious Recipes</h4>
+        
+        <!-- Recipes List -->
+        <div id="recipe-container" class="row"></div>
+    </div>
+    
+    <!-- Recipe Modal -->
+    <div id="recipeModal" class="modal">
+        <div class="modal-content">
+            <h4 id="modal-title"></h4>
+            <ul id="modal-ingredients"></ul>
+            <p id="modal-instructions"></p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="modal-close waves-effect waves-green btn-flat">Close</a>
+        </div>
+    </div>
+    
+    <!-- Floating Action Button -->
+    <div class="fixed-action-btn">
+        <a class="btn-floating btn-large red">
+            <i class="large material-icons">add</i>
+        </a>
+    </div>
+    
+    <!-- Materialize JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var modalElems = document.querySelectorAll('.modal');
+            M.Modal.init(modalElems);
+
+            // Fetch recipes from the server
+            fetch('/api/recipes')
+                .then(response => response.json())
+                .then(recipes => {
+                    const recipeContainer = document.getElementById('recipe-container');
+                    recipes.forEach(recipe => {
+                        const recipeCard = document.createElement('div');
+                        recipeCard.classList.add('col', 's12', 'm6', 'l4');
+                        recipeCard.innerHTML = `
+                            <div class="card">
+                                <div class="card-image">
+                                    <img src="${recipe.image}" alt="${recipe.name}">
+                                    <span class="card-title">${recipe.name}</span>
+                                </div>
+                                <div class="card-content">
+                                    <p>${recipe.instructions.substring(0, 50)}...</p>
+                                </div>
+                                <div class="card-action">
+                                    <a href="#recipeModal" class="modal-trigger" onclick="showRecipe(${recipe.id})">View Recipe</a>
+                                </div>
+                            </div>
+                        `;
+                        recipeContainer.appendChild(recipeCard);
+                    });
+                });
+        });
+
+        function showRecipe(recipeId) {
+            fetch('/api/recipes')
+                .then(response => response.json())
+                .then(recipes => {
+                    const recipe = recipes.find(r => r.id === recipeId);
+                    document.getElementById('modal-title').innerText = recipe.name;
+                    document.getElementById('modal-ingredients').innerHTML = recipe.ingredients.map(ing => `<li>${ing}</li>`).join('');
+                    document.getElementById('modal-instructions').innerText = recipe.instructions;
+                });
+        }
+    </script>
+</body>
+</html>
